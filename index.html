@@ -52,8 +52,10 @@ iframe{display:none;}
 
 <!-- STEP 3: INSTALL -->
 <div class="card">
-  <h2>Step 3 — Install App</h2>
-  <button class="btn-install needsConn" disabled onclick="installIpk()">⬇ Install TV Console Manager</button>
+  <h2>Step 3 — Install via iSH (slopbro method)</h2>
+  <input id="ishIp" value="10.0.0.146" style="margin-bottom:8px;padding:10px;border-radius:7px;border:1px solid #333;background:#222;color:#eee;font-size:14px;width:100%;box-sizing:border-box"/>
+  <button class="btn-install needsConn" disabled onclick="installViaAdoverlay()">🚀 Install via adoverlay WAM</button>
+  <p style="font-size:11px;color:#888;margin-top:8px;line-height:1.5">First run in iSH:<br><span style="color:#5bc0de;font-family:monospace">cd ~/slopbro && python3 -m http.server 8080</span></p>
 </div>
 
 <!-- CONTROLS -->
@@ -162,15 +164,19 @@ function sendToast(){
     {message:document.getElementById("msg").value||"Hello!"});
 }
 
-function installIpk(){
-  log("Installing: "+IPK_URL);
-  status("📦 Installing — watch your TV...","warn");
-  // Try the webOS built-in dev installer (works on rooted TVs)
-  send("ssap://com.webos.appInstallService/dev/install",{
-    id:"com.consolemanager.app",
-    ipkUrl:IPK_URL,
-    subscribe:true
+function installViaAdoverlay(){
+  var ishIp = document.getElementById("ishIp").value.trim() || "10.0.0.146";
+  var installUrl = "http://"+ishIp+":8080/install.html";
+  log("Launching adoverlay -> "+installUrl);
+  status("🚀 Launching adoverlay WAM app — watch TV screen...","warn");
+  // Same exact method slopbro uses to run code on the TV
+  send("ssap://com.webos.applicationManager/launch",{
+    id:"com.webos.app.adoverlay",
+    params:{target: installUrl}
   });
+  setTimeout(function(){
+    log("If TV screen showed nothing, adoverlay may be gone. Try com.webos.app.igallery or com.webos.app.browser as app id.");
+  }, 3000);
 }
 </script>
 </body>
