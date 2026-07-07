@@ -3,144 +3,158 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LG-Rebugged Console</title>
+<title>LG-Rebugged</title>
 <style>
-body{font-family:sans-serif;background:#141414;color:#eee;padding:20px;max-width:520px;margin:auto;}
-h1{color:#5bc0de;font-size:22px;margin:0 0 16px;}
-h3{font-size:14px;color:#aaa;margin:22px 0 8px;text-transform:uppercase;letter-spacing:1px;}
-button{background:#2c2c2c;color:#eee;border:1px solid #555;padding:12px 16px;margin:4px 4px 4px 0;
-  border-radius:6px;font-size:15px;cursor:pointer;width:100%;box-sizing:border-box;}
-button:active{background:#444;}
-button.primary{background:#1a3a4a;border-color:#5bc0de;color:#5bc0de;}
-button:disabled{opacity:0.35;}
-input{padding:10px;border-radius:6px;border:1px solid #555;background:#2a2a2a;color:#eee;
-  font-size:14px;width:100%;box-sizing:border-box;margin-bottom:8px;}
-#status{margin:10px 0;padding:10px;border-radius:6px;background:#1e1e1e;font-size:13px;border-left:3px solid #555;}
-#status.ok{border-color:#5bc0de;}
-#status.err{border-color:#c0392b;}
-#log{background:#0c0c0c;padding:10px;margin-top:16px;border-radius:6px;height:160px;
-  overflow-y:auto;font-family:monospace;font-size:11px;white-space:pre-wrap;color:#7fbf7f;}
-.row{display:flex;gap:8px;}
-.row input{flex:1;margin:0;}
-.row button{width:auto;white-space:nowrap;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,sans-serif;background:#111;color:#eee;padding:20px;max-width:480px;margin:auto;}
+h1{color:#5bc0de;font-size:22px;margin-bottom:4px;}
+.sub{color:#666;font-size:12px;margin-bottom:20px;}
+.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:16px;margin-bottom:14px;}
+.card h2{font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.row{display:flex;gap:8px;margin-bottom:8px;}
+input{flex:1;padding:10px;border-radius:7px;border:1px solid #333;background:#222;color:#eee;font-size:14px;}
+button{padding:11px 16px;border-radius:7px;border:none;font-size:14px;cursor:pointer;font-weight:600;}
+.btn-primary{background:#5bc0de;color:#111;width:100%;margin-top:4px;}
+.btn-secondary{background:#252525;color:#eee;border:1px solid #333;flex:1;}
+.btn-install{background:#27ae60;color:#fff;width:100%;font-size:15px;padding:14px;}
+.btn-danger{background:#c0392b;color:#fff;}
+#statusBox{border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;background:#1a1a1a;border-left:3px solid #444;}
+#statusBox.ok{border-color:#27ae60;background:#0d1f14;}
+#statusBox.err{border-color:#c0392b;background:#1f0d0d;}
+#statusBox.warn{border-color:#f39c12;background:#1f1a0d;}
+#log{background:#0a0a0a;border-radius:8px;padding:10px;height:130px;overflow-y:auto;font-family:monospace;font-size:11px;color:#5fbf5f;white-space:pre-wrap;}
+.cert-box{background:#1f1a0d;border:1px solid #f39c12;border-radius:8px;padding:14px;margin-bottom:14px;}
+.cert-box p{font-size:13px;line-height:1.6;color:#f0c060;}
+.cert-box a{color:#5bc0de;}
 iframe{display:none;}
 </style>
 </head>
 <body>
-<h1>LG-Rebugged Console</h1>
 
-<div class="row">
-  <input id="tvIp" placeholder="TV IP" value="10.0.0.129"/>
-  <button class="primary" onclick="connect()">Connect</button>
-</div>
-<div id="status">Not connected</div>
+<h1>LG-Rebugged</h1>
+<p class="sub">TV Console Manager · 10.0.0.129</p>
 
-<h3>Install IPK</h3>
-<input id="ipkUrl" placeholder="Paste direct .ipk URL here (GitHub release link)" />
-<button class="needsConn" disabled onclick="installIpk()">⬇ Install via Homebrew Channel</button>
-
-<h3>Toast Message</h3>
-<div class="row">
-  <input id="msg" placeholder="Message to show on TV"/>
-  <button class="needsConn" disabled onclick="sendToast()">Send</button>
+<!-- STEP 0: cert warning (shown until connected) -->
+<div class="cert-box" id="certBox">
+  ⚠️ <strong>One-time setup:</strong> Safari must trust the TV's certificate first.<br><br>
+  <a href="https://10.0.0.129:3001" target="_blank">👉 Tap here → accept the warning in Safari → come back</a><br><br>
+  <span style="font-size:12px;color:#aaa">On the warning page: tap "Show Details" → "visit this website"</span>
 </div>
 
-<h3>Controls</h3>
-<button class="needsConn" disabled onclick="send('ssap://audio/volumeUp')">Vol +</button>
-<button class="needsConn" disabled onclick="send('ssap://audio/volumeDown')">Vol -</button>
-<button class="needsConn" disabled onclick="send('ssap://audio/setMute',{mute:true})">Mute</button>
-<button class="needsConn" disabled onclick="send('ssap://system/turnOff')">Power Off</button>
+<div id="statusBox">Not connected</div>
+
+<!-- CONNECT -->
+<div class="card">
+  <h2>Connection</h2>
+  <button class="btn-primary" onclick="connect()" id="btnConnect">Connect to TV</button>
+</div>
+
+<!-- INSTALL -->
+<div class="card">
+  <h2>Install App</h2>
+  <button class="btn-install needsConn" disabled onclick="installIpk()">
+    ⬇ Install TV Console Manager
+  </button>
+</div>
+
+<!-- CONTROLS -->
+<div class="card">
+  <h2>Controls</h2>
+  <div class="row">
+    <button class="btn-secondary needsConn" disabled onclick="send('ssap://audio/volumeUp')">Vol +</button>
+    <button class="btn-secondary needsConn" disabled onclick="send('ssap://audio/volumeDown')">Vol -</button>
+    <button class="btn-secondary needsConn" disabled onclick="send('ssap://audio/setMute',{mute:true})">Mute</button>
+    <button class="btn-secondary btn-danger needsConn" disabled onclick="send('ssap://system/turnOff')">Off</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="card">
+  <h2>Toast Message</h2>
+  <div class="row">
+    <input id="msg" placeholder="Type a message..." value="Hello from LG-Rebugged!"/>
+    <button class="btn-secondary needsConn" disabled onclick="sendToast()" style="white-space:nowrap">Send</button>
+  </div>
+</div>
 
 <div id="log"></div>
 <iframe id="proxy"></iframe>
 
 <script>
-// --- Proxy code runs inside data: iframe (null origin = TV allows it) ---
-var proxyCode = '<scr'+'ipt>var ws=null;window.addEventListener("message",function(e){var m=e.data;if(m.cmd==="open"){try{ws=new WebSocket(m.url);ws.onopen=function(){parent.postMessage({ev:"open"},"*")};ws.onclose=function(){parent.postMessage({ev:"close"},"*")};ws.onerror=function(){parent.postMessage({ev:"error"},"*")};ws.onmessage=function(e){parent.postMessage({ev:"message",data:e.data},"*")}}catch(ex){parent.postMessage({ev:"error",detail:String(ex)},"*")}}else if(m.cmd==="send"&&ws&&ws.readyState===1){ws.send(m.data)}});parent.postMessage({ev:"ready"},"*");<\/scr'+'ipt>';
+var IPK_URL = "https://github.com/rebuging/LG-Rebugged/releases/download/V1.0/IPK.ipk";
+var TV_IP   = "10.0.0.129";
 
-var proxy = document.getElementById('proxy');
-proxy.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(proxyCode);
+// --- iframe proxy (data: URL = null origin = TV allows it) ---
+var proxySrc = '<scr'+'ipt>var ws=null;window.addEventListener("message",function(e){var m=e.data;if(m.cmd==="open"){try{ws=new WebSocket(m.url);ws.onopen=function(){parent.postMessage({ev:"open"},"*")};ws.onclose=function(){parent.postMessage({ev:"close"},"*")};ws.onerror=function(e){parent.postMessage({ev:"error"},"*")};ws.onmessage=function(e){parent.postMessage({ev:"message",data:e.data},"*")}}catch(ex){parent.postMessage({ev:"error",detail:String(ex)},"*")}}else if(m.cmd==="send"&&ws&&ws.readyState===1){ws.send(m.data)}});parent.postMessage({ev:"ready"},"*");<\/scr'+'ipt>';
+var proxy=document.getElementById("proxy");
+proxy.src="data:text/html;charset=utf-8,"+encodeURIComponent(proxySrc);
 
-var proxyReady = false, paired = false, msgId = 0;
+var proxyReady=false,paired=false,msgId=0;
 
-var manifest = {
-  manifestVersion:1, appVersion:"1.1",
+var MANIFEST={manifestVersion:1,appVersion:"1.1",
   permissions:["LAUNCH","LAUNCH_WEBAPP","APP_TO_APP","CLOSE",
     "CONTROL_AUDIO","CONTROL_DISPLAY","CONTROL_POWER",
     "READ_INSTALLED_APPS","READ_RUNNING_APPS",
-    "WRITE_NOTIFICATION_TOAST","WRITE_NOTIFICATION_ALERT"]
-};
+    "WRITE_NOTIFICATION_TOAST","WRITE_NOTIFICATION_ALERT"]};
 
-function log(m){var el=document.getElementById('log');el.innerHTML+=m+"\n";el.scrollTop=el.scrollHeight;}
-function setStatus(m,cls){var el=document.getElementById('status');el.textContent=m;el.className=cls||'';}
-function enable(on){document.querySelectorAll('.needsConn').forEach(function(b){b.disabled=!on;});}
-function wsSend(obj){proxy.contentWindow.postMessage({cmd:'send',data:JSON.stringify(obj)},'*');}
+function log(m){var el=document.getElementById("log");el.innerHTML+=m+"\n";el.scrollTop=el.scrollHeight;}
+function status(m,cls){var el=document.getElementById("statusBox");el.textContent=m;el.className=cls||"";}
+function enable(on){document.querySelectorAll(".needsConn").forEach(function(b){b.disabled=!on;});}
+function wsSend(o){proxy.contentWindow.postMessage({cmd:"send",data:JSON.stringify(o)},"*");}
 
-window.addEventListener('load',function(){
-  var host=location.hostname;
-  if(host&&host!=='localhost'&&host!==''){document.getElementById('tvIp').value=host;}
-});
-
-window.addEventListener('message',function(e){
+window.addEventListener("message",function(e){
   var m=e.data;
-  if(m.ev==='ready'){proxyReady=true;}
-  else if(m.ev==='open'){
-    log('Connected — registering...');
-    var ip=document.getElementById('tvIp').value.trim();
-    var key=localStorage.getItem('tvkey_'+ip);
-    var payload={forcePairing:false,pairingType:'PROMPT',manifest:manifest};
-    if(key)payload['client-key']=key;
-    wsSend({type:'register',id:'register_0',payload:payload});
-    setStatus('👋 Accept the prompt on your TV screen...');
+  if(m.ev==="ready"){proxyReady=true;}
+  else if(m.ev==="open"){
+    log("Socket open — registering...");
+    var key=localStorage.getItem("tvkey");
+    var p={forcePairing:false,pairingType:"PROMPT",manifest:MANIFEST};
+    if(key)p["client-key"]=key;
+    wsSend({type:"register",id:"register_0",payload:p});
+    status("👋 Accept the pairing prompt on your TV screen...","warn");
   }
-  else if(m.ev==='message'){
+  else if(m.ev==="message"){
     var d;try{d=JSON.parse(m.data);}catch(_){return;}
-    log('<- '+JSON.stringify(d));
-    if(d.type==='registered'){
-      var ip=document.getElementById('tvIp').value.trim();
-      if(d.payload&&d.payload['client-key'])localStorage.setItem('tvkey_'+ip,d.payload['client-key']);
+    log("<- "+JSON.stringify(d));
+    if(d.type==="registered"){
+      if(d.payload&&d.payload["client-key"])localStorage.setItem("tvkey",d.payload["client-key"]);
       paired=true;
-      setStatus('✅ Connected & paired!','ok');
+      document.getElementById("certBox").style.display="none";
+      status("✅ Connected & paired!","ok");
       enable(true);
-    } else if(d.type==='error'){
-      setStatus('TV error: '+(d.error||''),'err');
-    }
+    }else if(d.type==="error"){status("TV error: "+(d.error||JSON.stringify(d)),"err");}
   }
-  else if(m.ev==='error'){setStatus('❌ Connection failed — see log','err');log('Error: '+(m.detail||''));}
-  else if(m.ev==='close'){setStatus('Disconnected','err');paired=false;enable(false);}
+  else if(m.ev==="error"){
+    status("❌ Connection failed — did you accept the cert? Tap the yellow box above first","err");
+    log("Connection error"+(m.detail?" — "+m.detail:""));
+  }
+  else if(m.ev==="close"){status("Disconnected — tap Connect to retry","err");paired=false;enable(false);}
 });
 
 function connect(){
-  var ip=document.getElementById('tvIp').value.trim();
-  if(!ip){alert('Enter TV IP');return;}
-  if(!proxyReady){setTimeout(connect,500);return;}
+  if(!proxyReady){setTimeout(connect,300);return;}
   paired=false;enable(false);
-  setStatus('Connecting to '+ip+'...');
-  log('Opening ws://'+ip+':3000');
-  proxy.contentWindow.postMessage({cmd:'open',url:'ws://'+ip+':3000'},'*');
+  // Try wss:3001 first (same as dangbro), fall back to ws:3000
+  log("Connecting wss://"+TV_IP+":3001 ...");
+  status("Connecting...","");
+  proxy.contentWindow.postMessage({cmd:"open",url:"wss://"+TV_IP+":3001"},"*");
 }
 
 function send(uri,payload){
-  if(!paired){alert('Not paired yet');return;}
-  payload=payload||{};
-  var msg={type:'request',id:'req_'+(msgId++),uri:uri,payload:payload};
-  log('-> '+JSON.stringify(msg));
+  if(!paired){return;}
+  var msg={type:"request",id:"req_"+(msgId++),uri:uri,payload:payload||{}};
+  log("-> "+JSON.stringify(msg));
   wsSend(msg);
 }
 
 function sendToast(){
-  var message=document.getElementById('msg').value||'Hello TV!';
-  send('ssap://system.notifications/createToast',{message:message});
+  send("ssap://system.notifications/createToast",{message:document.getElementById("msg").value||"Hello!"});
 }
 
 function installIpk(){
-  var url=document.getElementById('ipkUrl').value.trim();
-  if(!url){alert('Paste the .ipk URL first');return;}
-  if(!url.endsWith('.ipk')){alert('URL must end in .ipk — use the direct asset link from GitHub Releases');return;}
-  log('Installing: '+url);
-  // Try Homebrew Channel install service
-  send('ssap://org.webosbrew.hbchannel.service/install',{ipkUrl:url});
-  setStatus('📦 Install sent — watch your TV screen...','ok');
+  log("Sending install: "+IPK_URL);
+  status("📦 Installing — watch your TV screen...","warn");
+  send("ssap://org.webosbrew.hbchannel.service/install",{ipkUrl:IPK_URL});
 }
 </script>
 </body>
