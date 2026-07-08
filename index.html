@@ -1,183 +1,1255 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LG-Rebugged</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<meta name="theme-color" content="#14161A">
+<title>Ledger — Trade Journal</title>
+
+<!-- ============================================================
+     YOUR DATA LIVES HERE. Do not hand-edit unless you know JSON.
+     The "Save to File" button rewrites this block and downloads
+     a fresh copy of this page with all your trades inside.
+     ============================================================ -->
+<script id="tradeData" type="application/json">
+{"trades":[],"meta":{"created":null}}
+</script>
+
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,sans-serif;background:#111;color:#eee;padding:20px;max-width:480px;margin:auto;}
-h1{color:#5bc0de;font-size:22px;margin-bottom:4px;}
-.sub{color:#666;font-size:12px;margin-bottom:16px;}
-.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:16px;margin-bottom:12px;}
-.card h2{font-size:12px;color:#777;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
-button{padding:12px 16px;border-radius:7px;border:none;font-size:14px;cursor:pointer;font-weight:600;width:100%;margin-top:6px;}
-.btn-cert{background:#f39c12;color:#000;font-size:16px;padding:16px;}
-.btn-connect{background:#5bc0de;color:#111;}
-.btn-install{background:#27ae60;color:#fff;font-size:15px;padding:14px;}
-.btn-red{background:#c0392b;color:#fff;}
-.btn-gray{background:#252525;color:#eee;border:1px solid #333;}
-.row{display:flex;gap:8px;}
-.row button{margin:0;}
-input{flex:1;padding:10px;border-radius:7px;border:1px solid #333;background:#222;color:#eee;font-size:14px;width:100%;}
-#statusBox{border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;background:#1a1a1a;border-left:3px solid #444;line-height:1.5;}
-#statusBox.ok{border-color:#27ae60;background:#0d1f14;}
-#statusBox.err{border-color:#c0392b;background:#1f0d0d;}
-#statusBox.warn{border-color:#f39c12;background:#1f1a0d;}
-#log{background:#0a0a0a;border-radius:8px;padding:10px;height:120px;overflow-y:auto;font-family:monospace;font-size:11px;color:#5fbf5f;white-space:pre-wrap;}
-iframe{display:none;}
+  :root{
+    --ink:#14161A;
+    --surface:#1C1F26;
+    --surface-2:#232732;
+    --hair:#2E333F;
+    --hair-soft:#262A33;
+    --text:#E8E6E1;
+    --muted:#8A8F9C;
+    --muted-2:#5F6570;
+    --amber:#E8A94E;
+    --amber-soft:#F0BE73;
+    --amber-dim:rgba(232,169,78,0.14);
+    --green:#57C08A;
+    --green-dim:rgba(87,192,138,0.12);
+    --red:#E5645E;
+    --red-dim:rgba(229,100,94,0.12);
+    --radius:12px;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,"JetBrains Mono","Cascadia Mono",Menlo,Consolas,monospace;
+    --ui:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    --shadow:0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 30px -12px rgba(0,0,0,0.6);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(232,169,78,0.06), transparent 60%),
+      var(--ink);
+    color:var(--text);
+    font-family:var(--ui);
+    font-size:15px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
+  .pos{color:var(--green);}
+  .neg{color:var(--red);}
+  .dim{color:var(--muted);}
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky;top:0;z-index:40;
+    background:rgba(20,22,26,0.82);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--hair);
+  }
+  .bar{
+    max-width:1180px;margin:0 auto;padding:14px 20px;
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;}
+  .brand .mark{
+    font-family:var(--mono);font-weight:700;letter-spacing:0.22em;
+    font-size:15px;color:var(--amber);text-transform:uppercase;
+  }
+  .brand .sub{font-size:12px;color:var(--muted);letter-spacing:0.04em;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+  button{font-family:var(--ui);cursor:pointer;border:none;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:9px 15px;border-radius:9px;font-size:13.5px;font-weight:600;
+    background:var(--surface-2);color:var(--text);
+    border:1px solid var(--hair);transition:.15s;
+    white-space:nowrap;
+  }
+  .btn:hover{border-color:#3a4150;background:#272c37;}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{
+    background:linear-gradient(180deg,var(--amber-soft),var(--amber));
+    color:#231a08;border-color:transparent;
+    box-shadow:0 6px 18px -8px rgba(232,169,78,0.7);
+  }
+  .btn.primary:hover{filter:brightness(1.05);background:linear-gradient(180deg,var(--amber-soft),var(--amber));}
+  .btn.ghost{background:transparent;}
+  .btn .kbd{font-family:var(--mono);font-size:11px;opacity:.6;}
+
+  .savedot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--muted-2);align-self:center;flex:0 0 auto;
+    transition:.2s;box-shadow:0 0 0 0 transparent;
+  }
+  .savedot.ok{background:var(--green);box-shadow:0 0 0 3px var(--green-dim);}
+  .savedot.warn{background:var(--amber);box-shadow:0 0 0 3px var(--amber-dim);}
+
+  /* ---------- Tabs ---------- */
+  .tabs{
+    max-width:1180px;margin:0 auto;padding:0 20px;
+    display:flex;gap:2px;border-bottom:1px solid var(--hair);
+  }
+  .tab{
+    background:none;color:var(--muted);font-size:13.5px;font-weight:600;
+    padding:13px 16px;border-bottom:2px solid transparent;margin-bottom:-1px;
+    letter-spacing:0.02em;
+  }
+  .tab:hover{color:var(--text);}
+  .tab.on{color:var(--amber);border-bottom-color:var(--amber);}
+
+  main{max-width:1180px;margin:0 auto;padding:26px 20px 80px;}
+  .view{display:none;animation:fade .25s ease;}
+  .view.on{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  /* ---------- Dashboard ---------- */
+  .stat-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;
+  }
+  .stat{
+    background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .stat .label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+  .stat .value{font-family:var(--mono);font-size:26px;font-weight:600;margin-top:8px;letter-spacing:-0.02em;}
+  .stat .foot{font-size:12px;color:var(--muted);margin-top:4px;}
+  .stat.hero{grid-column:span 2;}
+  .stat .accent-bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--hair);}
+  .stat.hero .accent-bar{background:var(--amber);}
+
+  .panel{
+    background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);
+    padding:20px;box-shadow:var(--shadow);margin-bottom:20px;
+  }
+  .panel h3{margin:0 0 14px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .bars{display:flex;flex-direction:column;gap:10px;}
+  .barrow{display:grid;grid-template-columns:130px 1fr 52px;align-items:center;gap:12px;font-size:13px;}
+  .barrow .track{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;}
+  .barrow .fill{height:100%;border-radius:99px;background:var(--amber);}
+  .barrow .cnt{text-align:right;color:var(--muted);font-family:var(--mono);font-size:12px;}
+
+  /* ---------- Form ---------- */
+  form{display:block;}
+  .fieldset{margin-bottom:22px;}
+  .fieldset > legend{
+    font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);
+    font-weight:700;padding:0;margin-bottom:14px;display:flex;align-items:center;gap:10px;width:100%;
+  }
+  .fieldset > legend::after{content:"";height:1px;flex:1;background:var(--hair);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1/-1;}
+  label{font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:0.01em;}
+  label .opt{color:var(--muted-2);font-weight:400;}
+  input,select,textarea{
+    font-family:var(--ui);font-size:14px;color:var(--text);
+    background:var(--surface-2);border:1px solid var(--hair);
+    border-radius:9px;padding:10px 12px;transition:.15s;width:100%;
+  }
+  input.num-in{font-family:var(--mono);}
+  input:focus,select:focus,textarea:focus{
+    outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-dim);
+  }
+  textarea{resize:vertical;min-height:80px;line-height:1.55;}
+  select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px;}
+
+  /* direction segmented */
+  .seg{display:flex;gap:6px;}
+  .seg input{display:none;}
+  .seg label{
+    flex:1;text-align:center;padding:10px;border-radius:9px;cursor:pointer;
+    background:var(--surface-2);border:1px solid var(--hair);color:var(--muted);
+    font-weight:700;font-size:13.5px;letter-spacing:0.04em;transition:.15s;
+  }
+  .seg input:checked + label.long{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  .seg input:checked + label.short{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+
+  /* mood + tags chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{position:relative;}
+  .chip input{position:absolute;opacity:0;pointer-events:none;}
+  .chip label{
+    display:inline-block;padding:7px 13px;border-radius:99px;cursor:pointer;
+    background:var(--surface-2);border:1px solid var(--hair);color:var(--muted);
+    font-size:12.5px;font-weight:600;transition:.15s;user-select:none;
+  }
+  .chip label:hover{border-color:#3a4150;color:var(--text);}
+  .chip input:checked + label{background:var(--amber-dim);border-color:var(--amber);color:var(--amber-soft);}
+  .chip.good input:checked + label{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  .chip.bad input:checked + label{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+
+  .live-pnl{
+    display:flex;flex-wrap:wrap;gap:22px;padding:14px 16px;border-radius:10px;
+    background:var(--surface-2);border:1px solid var(--hair);margin-top:4px;
+  }
+  .live-pnl .cell .k{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);}
+  .live-pnl .cell .v{font-family:var(--mono);font-size:20px;font-weight:600;margin-top:3px;}
+
+  .form-foot{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+  .form-foot .spacer{flex:1;}
+
+  /* ---------- History ---------- */
+  .hist-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+  .hist-tools input,.hist-tools select{width:auto;}
+  .hist-tools .search{min-width:200px;flex:1;}
+  .count-tag{font-size:12.5px;color:var(--muted);font-family:var(--mono);}
+
+  .cards{display:flex;flex-direction:column;gap:12px;}
+  .tcard{
+    background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius);
+    padding:16px 18px 16px 20px;position:relative;box-shadow:var(--shadow);
+    border-left:3px solid var(--hair);
+  }
+  .tcard.win{border-left-color:var(--green);}
+  .tcard.loss{border-left-color:var(--red);}
+  .tcard.broke{border-left-color:var(--red);}
+  .tcard.disc-loss{border-left-color:var(--amber);}
+  .tcard.open{border-left-color:var(--muted-2);}
+
+  .tc-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .tc-sym{font-family:var(--mono);font-weight:700;font-size:17px;letter-spacing:0.02em;}
+  .tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:0.03em;text-transform:uppercase;}
+  .tag.long{background:var(--green-dim);color:var(--green);}
+  .tag.short{background:var(--red-dim);color:var(--red);}
+  .tag.openx{background:var(--surface-2);color:var(--muted);border:1px solid var(--hair);}
+  .tc-pnl{margin-left:auto;font-family:var(--mono);font-size:19px;font-weight:700;text-align:right;}
+  .tc-pnl small{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.03em;}
+  .tc-date{color:var(--muted);font-size:12.5px;font-family:var(--mono);}
+
+  .tc-metrics{
+    display:flex;flex-wrap:wrap;gap:18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--hair-soft);
+    font-size:13px;
+  }
+  .tc-metrics .m .k{font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);}
+  .tc-metrics .m .v{font-family:var(--mono);font-weight:600;margin-top:2px;}
+
+  .mood-strip{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .mood-strip .pill{font-size:11px;color:var(--muted);background:var(--surface-2);border:1px solid var(--hair-soft);padding:4px 9px;border-radius:99px;}
+  .mood-strip .pill b{color:var(--text);font-weight:600;}
+  .mood-strip .arrow{color:var(--muted-2);font-size:11px;}
+  .tc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .tc-tags .t{font-size:11px;padding:3px 8px;border-radius:6px;background:var(--surface-2);color:var(--muted);border:1px solid var(--hair-soft);}
+  .tc-tags .t.good{color:var(--green);border-color:rgba(87,192,138,0.3);}
+  .tc-tags .t.bad{color:var(--red);border-color:rgba(229,100,94,0.3);}
+  .tc-note{margin-top:12px;font-size:13.5px;color:#c9ccd3;line-height:1.55;white-space:pre-wrap;background:var(--surface-2);padding:10px 12px;border-radius:8px;border:1px solid var(--hair-soft);}
+  .tc-controls{position:absolute;top:14px;right:16px;display:none;gap:6px;}
+  .tcard:hover .tc-controls{display:flex;}
+  .icon-btn{background:var(--surface-2);border:1px solid var(--hair);color:var(--muted);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;}
+  .icon-btn:hover{color:var(--text);border-color:#3a4150;}
+  .icon-btn.danger:hover{color:var(--red);border-color:var(--red);}
+
+  /* empty state */
+  .empty{
+    text-align:center;padding:64px 24px;border:1px dashed var(--hair);border-radius:var(--radius);color:var(--muted);
+  }
+  .empty .big{font-size:17px;color:var(--text);font-weight:600;margin-bottom:8px;}
+  .empty .mono{font-family:var(--mono);font-size:13px;color:var(--amber);letter-spacing:0.1em;margin-bottom:18px;}
+
+  /* toast + hint */
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2);border:1px solid var(--amber);color:var(--text);
+    padding:12px 18px;border-radius:10px;font-size:13.5px;font-weight:600;
+    box-shadow:0 12px 40px -10px rgba(0,0,0,0.7);opacity:0;pointer-events:none;transition:.28s;z-index:80;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.err{border-color:var(--red);}
+
+  .hint{
+    font-size:12.5px;color:var(--muted);background:var(--amber-dim);border:1px solid rgba(232,169,78,0.3);
+    border-radius:10px;padding:12px 14px;margin-bottom:20px;line-height:1.55;
+  }
+  .hint b{color:var(--amber-soft);}
+
+  /* ---------- Charts ---------- */
+  .chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px;}
+  .growth-line{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-0.02em;}
+  .growth-line .sub{font-size:12px;color:var(--muted);font-family:var(--ui);letter-spacing:0;margin-left:8px;}
+  .bal-input{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+  .bal-input > span{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);}
+  .bal-wrap{display:flex;align-items:center;gap:4px;background:var(--surface-2);border:1px solid var(--hair);border-radius:9px;padding:0 10px;color:var(--muted);font-family:var(--mono);}
+  .bal-wrap input{background:none;border:none;padding:9px 2px;width:110px;text-align:right;}
+  .bal-wrap input:focus{outline:none;box-shadow:none;}
+  .bal-wrap:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-dim);}
+  .chart-wrap{width:100%;margin-top:12px;}
+  .chart-wrap svg{width:100%;height:auto;display:block;overflow:visible;}
+  .chart-empty{color:var(--muted);font-size:13px;padding:36px 0;text-align:center;}
+
+  .radar-layout{display:grid;grid-template-columns:1fr 150px;gap:16px;align-items:center;}
+  .radar-wrap{margin-top:0;}
+  .radar-legend{display:flex;flex-direction:column;gap:9px;}
+  .radar-legend .rl{display:flex;justify-content:space-between;gap:10px;font-size:12px;}
+  .radar-legend .rl .rk{color:var(--muted);}
+  .radar-legend .rl .rv{font-family:var(--mono);font-weight:600;color:var(--text);}
+  .rax-label{font-size:9.5px;fill:var(--muted);font-family:var(--ui);}
+  .rax-label.hot{fill:var(--amber-soft);}
+
+  @media (max-width:720px){
+    .radar-layout{grid-template-columns:1fr;}
+    .bal-input{align-items:flex-start;}
+    .split{grid-template-columns:1fr;}
+    .stat.hero{grid-column:span 2;}
+    .bar{padding:12px 14px;}
+    main{padding:20px 14px 70px;}
+    .brand .sub{display:none;}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
 
-<h1>LG-Rebugged</h1>
-<p class="sub">TV Console Manager</p>
-
-<div id="statusBox">Not connected</div>
-
-<!-- STEP 1: CERT - same as dangbro's "open cert" button -->
-<div class="card">
-  <h2>Step 1 — Accept TV Certificate (one time only)</h2>
-  <button class="btn-cert" onclick="openCert()">🔐 Open Cert Page in Safari</button>
-  <p style="font-size:11px;color:#888;margin-top:8px;line-height:1.5">
-    Tap above → Safari opens a page → tap <b>"Show Details"</b> → <b>"visit this website"</b> → come back here
-  </p>
-</div>
-
-<!-- STEP 2: CONNECT -->
-<div class="card">
-  <h2>Step 2 — Connect</h2>
-  <button class="btn-connect" onclick="connect()">Connect to TV (10.0.0.129)</button>
-</div>
-
-<!-- STEP 3: INSTALL -->
-<div class="card">
-  <h2>Step 3 — Install via iSH (slopbro method)</h2>
-  <input id="ishIp" value="10.0.0.146" style="margin-bottom:8px;padding:10px;border-radius:7px;border:1px solid #333;background:#222;color:#eee;font-size:14px;width:100%;box-sizing:border-box"/>
-  <button class="btn-install needsConn" disabled onclick="installViaAdoverlay()">🚀 Install via adoverlay WAM</button>
-  <p style="font-size:11px;color:#888;margin-top:8px;line-height:1.5">First run in iSH:<br><span style="color:#5bc0de;font-family:monospace">cd ~/slopbro && python3 -m http.server 8080</span></p>
-</div>
-
-<!-- CONTROLS -->
-<div class="card">
-  <h2>Controls</h2>
-  <div class="row">
-    <button class="btn-gray needsConn" disabled onclick="send('ssap://audio/volumeUp')">Vol +</button>
-    <button class="btn-gray needsConn" disabled onclick="send('ssap://audio/volumeDown')">Vol -</button>
-    <button class="btn-gray needsConn" disabled onclick="send('ssap://audio/setMute',{mute:true})">Mute</button>
-    <button class="btn-red needsConn" disabled onclick="send('ssap://system/turnOff')">Off</button>
+<header>
+  <div class="bar">
+    <div class="brand">
+      <span class="mark">Ledger</span>
+      <span class="sub">disciplined trade journal</span>
+    </div>
+    <div class="actions">
+      <span id="saveDot" class="savedot" title="Auto-save"></span>
+      <button class="btn ghost" onclick="importFile()" title="Load a previously saved journal file">Import</button>
+      <button class="btn ghost" onclick="exportCSV()" title="Export trades as spreadsheet">Export CSV</button>
+      <button class="btn primary" onclick="saveToFile()" title="Download a backup copy of this journal with all data baked in">
+        Backup to File <span class="kbd">⌘S</span>
+      </button>
+    </div>
   </div>
-</div>
+  <nav class="tabs">
+    <button class="tab on" data-view="dashboard" onclick="switchView('dashboard')">Dashboard</button>
+    <button class="tab" data-view="entry" onclick="switchView('entry')">Log Trade</button>
+    <button class="tab" data-view="history" onclick="switchView('history')">History</button>
+  </nav>
+</header>
 
-<!-- TOAST -->
-<div class="card">
-  <h2>Toast Message</h2>
-  <div class="row" style="margin-bottom:6px">
-    <input id="msg" value="Hello from LG-Rebugged!"/>
-  </div>
-  <button class="btn-gray needsConn" disabled onclick="sendToast()">Send Toast to TV</button>
-</div>
+<main>
+  <!-- ===================== DASHBOARD ===================== -->
+  <section class="view on" id="view-dashboard">
+    <div class="hint">
+      <b>Auto-save is on.</b> Every trade you add saves itself inside your browser instantly — the green dot up top confirms it. Close the tab, close Safari, restart your phone: your trades are still here when you reopen. No save button needed. &nbsp;<b>To use it like an app:</b> open this file in <b>Safari</b>, tap Share → <b>Add to Home Screen</b>. &nbsp;<b>Backup:</b> the browser's storage can be wiped if you clear Safari history/website data, so tap <b>Backup to File</b> now and then to keep a safe copy (and to move your journal to another device).
+    </div>
 
-<div id="log"></div>
-<iframe id="proxy"></iframe>
+    <div class="stat-grid" id="statGrid"><!-- filled by JS --></div>
+
+    <div class="panel">
+      <div class="chart-head">
+        <div>
+          <h3 style="margin:0">Equity Curve</h3>
+          <div class="growth-line" id="growthReadout"></div>
+        </div>
+        <label class="bal-input">
+          <span>Starting balance</span>
+          <div class="bal-wrap">$<input type="number" step="any" id="startBalance" placeholder="10,000" oninput="onBalanceChange()"></div>
+        </label>
+      </div>
+      <div class="chart-wrap" id="equityChart"></div>
+    </div>
+
+    <div class="split">
+      <div class="panel">
+        <h3>Performance Radar</h3>
+        <div class="radar-layout">
+          <div class="chart-wrap radar-wrap" id="radarChart"></div>
+          <div class="radar-legend" id="radarLegend"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Result Breakdown</h3>
+        <div class="bars" id="breakdownBars"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Emotional Patterns</h3>
+      <div class="bars" id="emotionBars"></div>
+    </div>
+  </section>
+
+  <!-- ===================== LOG TRADE ===================== -->
+  <section class="view" id="view-entry">
+    <div class="panel">
+      <form id="tradeForm" onsubmit="return false;">
+        <input type="hidden" id="editId" value="">
+
+        <fieldset class="fieldset" style="border:none;padding:0;margin-bottom:22px;">
+          <legend>The Setup</legend>
+          <div class="grid">
+            <div class="field">
+              <label for="date">Date &amp; time</label>
+              <input type="datetime-local" id="date">
+            </div>
+            <div class="field">
+              <label for="symbol">Symbol / ticker</label>
+              <input type="text" id="symbol" placeholder="AAPL, BTC, EURUSD…" autocomplete="off">
+            </div>
+            <div class="field">
+              <label>Direction</label>
+              <div class="seg">
+                <input type="radio" name="dir" id="dirLong" value="long" checked>
+                <label class="long" for="dirLong">Long</label>
+                <input type="radio" name="dir" id="dirShort" value="short">
+                <label class="short" for="dirShort">Short</label>
+              </div>
+            </div>
+            <div class="field">
+              <label for="setup">Setup / strategy <span class="opt">optional</span></label>
+              <input type="text" id="setup" placeholder="Breakout, pullback, gap fill…" autocomplete="off">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fieldset" style="border:none;padding:0;margin-bottom:22px;">
+          <legend>The Numbers</legend>
+          <div class="grid">
+            <div class="field">
+              <label for="entry">Entry price</label>
+              <input type="number" step="any" id="entry" class="num-in" placeholder="0.00" oninput="recalc()">
+            </div>
+            <div class="field">
+              <label for="exit">Exit price <span class="opt">blank = open</span></label>
+              <input type="number" step="any" id="exit" class="num-in" placeholder="0.00" oninput="recalc()">
+            </div>
+            <div class="field">
+              <label for="size">Position size</label>
+              <input type="number" step="any" id="size" class="num-in" placeholder="shares / contracts / units" oninput="recalc()">
+            </div>
+            <div class="field">
+              <label for="stop">Stop loss <span class="opt">for R</span></label>
+              <input type="number" step="any" id="stop" class="num-in" placeholder="0.00" oninput="recalc()">
+            </div>
+            <div class="field">
+              <label for="target">Target <span class="opt">optional</span></label>
+              <input type="number" step="any" id="target" class="num-in" placeholder="0.00">
+            </div>
+            <div class="field">
+              <label for="fees">Fees / commission <span class="opt">optional</span></label>
+              <input type="number" step="any" id="fees" class="num-in" placeholder="0.00" oninput="recalc()">
+            </div>
+          </div>
+          <div class="live-pnl" id="livePnl" style="margin-top:14px;">
+            <div class="cell"><div class="k">Net P&amp;L</div><div class="v num dim" id="lpPnl">—</div></div>
+            <div class="cell"><div class="k">Return</div><div class="v num dim" id="lpPct">—</div></div>
+            <div class="cell"><div class="k">R multiple</div><div class="v num dim" id="lpR">—</div></div>
+            <div class="cell"><div class="k">Result</div><div class="v num dim" id="lpRes">—</div></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fieldset" style="border:none;padding:0;margin-bottom:22px;">
+          <legend>The Mind</legend>
+          <div class="grid" style="margin-bottom:16px;">
+            <div class="field">
+              <label for="moodBefore">Mood before</label>
+              <select id="moodBefore">
+                <option value="">—</option>
+                <option>Calm</option><option>Confident</option><option>Neutral</option>
+                <option>Anxious</option><option>Excited</option><option>Fearful</option>
+                <option>Frustrated</option><option>Greedy</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="moodDuring">Mood during</label>
+              <select id="moodDuring">
+                <option value="">—</option>
+                <option>Calm</option><option>Confident</option><option>Neutral</option>
+                <option>Anxious</option><option>Excited</option><option>Fearful</option>
+                <option>Frustrated</option><option>Greedy</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="moodAfter">Mood after</label>
+              <select id="moodAfter">
+                <option value="">—</option>
+                <option>Calm</option><option>Satisfied</option><option>Relieved</option>
+                <option>Neutral</option><option>Regretful</option><option>Frustrated</option>
+                <option>Angry</option><option>Euphoric</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="conf">Conviction (1–5)</label>
+              <select id="conf">
+                <option value="">—</option>
+                <option value="1">1 · Guessing</option>
+                <option value="2">2 · Unsure</option>
+                <option value="3">3 · Reasonable</option>
+                <option value="4">4 · Strong</option>
+                <option value="5">5 · A+ setup</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field full">
+            <label>Behaviour tags <span class="opt">tap all that apply</span></label>
+            <div class="chips" id="tagChips"></div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fieldset" style="border:none;padding:0;margin-bottom:10px;">
+          <legend>The Notes</legend>
+          <div class="field full">
+            <label for="notes">What happened, what you saw, what you'd do differently</label>
+            <textarea id="notes" placeholder="The chart looked like a clean breakout over resistance. I sized correctly and held to target. Next time, don't take profit early on strong trends…"></textarea>
+          </div>
+        </fieldset>
+
+        <div class="form-foot">
+          <button class="btn primary" type="button" onclick="saveTrade()" id="submitBtn">Add trade</button>
+          <button class="btn ghost" type="button" onclick="resetForm()">Clear form</button>
+          <span class="spacer"></span>
+          <span class="dim" style="font-size:12.5px;">Trades are held in memory — remember to <b style="color:var(--amber-soft)">Save to File</b> before closing.</span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== HISTORY ===================== -->
+  <section class="view" id="view-history">
+    <div class="hist-tools">
+      <input type="text" class="search" id="search" placeholder="Search symbol, setup, notes…" oninput="renderHistory()">
+      <select id="filterResult" onchange="renderHistory()">
+        <option value="all">All results</option>
+        <option value="win">Wins</option>
+        <option value="loss">Losses</option>
+        <option value="be">Break-even</option>
+        <option value="open">Open</option>
+      </select>
+      <select id="sortBy" onchange="renderHistory()">
+        <option value="date-desc">Newest first</option>
+        <option value="date-asc">Oldest first</option>
+        <option value="pnl-desc">Biggest win</option>
+        <option value="pnl-asc">Biggest loss</option>
+      </select>
+      <span class="count-tag" id="countTag"></span>
+    </div>
+    <div class="cards" id="historyCards"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept=".html,.json" style="display:none" onchange="handleImport(event)">
 
 <script>
-var TV_IP   = "10.0.0.129";
-var IPK_URL = "https://github.com/rebuging/LG-Rebugged/releases/download/V1.0/IPK.ipk";
+/* =========================================================
+   STATE
+   ========================================================= */
+const BEHAVIOUR_TAGS = [
+  {t:"Followed plan", k:"good"},
+  {t:"Disciplined", k:"good"},
+  {t:"Patient", k:"good"},
+  {t:"Good entry", k:"good"},
+  {t:"Cut loss well", k:"good"},
+  {t:"Let winner run", k:"good"},
+  {t:"Broke rules", k:"bad"},
+  {t:"FOMO", k:"bad"},
+  {t:"Revenge trade", k:"bad"},
+  {t:"Chased", k:"bad"},
+  {t:"Moved stop", k:"bad"},
+  {t:"Oversized", k:"bad"},
+  {t:"Took profit early", k:"bad"},
+  {t:"Hesitated", k:"bad"},
+];
 
-function openCert(){
-  // Exactly like dangbro's "open cert" button
-  window.open("https://"+TV_IP+":3001","_blank");
+let state = {trades:[], meta:{created:null}};
+
+/* =========================================================
+   PERSISTENCE — IndexedDB (auto-saves inside the browser)
+   The journal remembers your trades automatically. No save
+   step. Data survives closing the tab, closing Safari, and
+   restarting the phone. Export to File is a manual BACKUP.
+   ========================================================= */
+const DB_NAME="ledgerDB", STORE="state", KEY="journal";
+let _db=null, _saveTimer=null, _lastSavedStr="";
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB){ resolve(null); return; }
+    let req;
+    try{ req=indexedDB.open(DB_NAME,1); }
+    catch(e){ resolve(null); return; }
+    req.onupgradeneeded=()=>{ req.result.createObjectStore(STORE); };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>resolve(null);   // private mode etc. — degrade gracefully
+    req.onblocked=()=>resolve(null);
+  });
 }
 
-// --- data: iframe proxy (null origin = TV SSAP allows it) ---
-var proxyCode = '<scr'+'ipt>var ws=null;window.addEventListener("message",function(e){var m=e.data;if(m.cmd==="open"){try{ws=new WebSocket(m.url);ws.onopen=function(){parent.postMessage({ev:"open"},"*")};ws.onclose=function(){parent.postMessage({ev:"close"},"*")};ws.onerror=function(){parent.postMessage({ev:"error"},"*")};ws.onmessage=function(e){parent.postMessage({ev:"message",data:e.data},"*")}}catch(ex){parent.postMessage({ev:"error",detail:String(ex)},"*")}}else if(m.cmd==="send"&&ws&&ws.readyState===1){ws.send(m.data)}});parent.postMessage({ev:"ready"},"*");<\/scr'+'ipt>';
-var proxy = document.getElementById("proxy");
-proxy.src = "data:text/html;charset=utf-8,"+encodeURIComponent(proxyCode);
+function idbGet(){
+  return new Promise((resolve)=>{
+    if(!_db){ resolve(null); return; }
+    try{
+      const tx=_db.transaction(STORE,"readonly").objectStore(STORE).get(KEY);
+      tx.onsuccess=()=>resolve(tx.result||null);
+      tx.onerror=()=>resolve(null);
+    }catch(e){ resolve(null); }
+  });
+}
 
-var proxyReady=false, paired=false, msgId=0;
+function idbPut(obj){
+  return new Promise((resolve)=>{
+    if(!_db){ resolve(false); return; }
+    try{
+      const tx=_db.transaction(STORE,"readwrite");
+      tx.objectStore(STORE).put(obj,KEY);
+      tx.oncomplete=()=>resolve(true);
+      tx.onerror=()=>resolve(false);
+      tx.onabort=()=>resolve(false);
+    }catch(e){ resolve(false); }
+  });
+}
 
-var MANIFEST={
-  manifestVersion:1,appVersion:"1.1",
-  permissions:["LAUNCH","LAUNCH_WEBAPP","APP_TO_APP","CLOSE",
-    "CONTROL_AUDIO","CONTROL_DISPLAY","CONTROL_POWER",
-    "READ_INSTALLED_APPS","READ_RUNNING_APPS",
-    "WRITE_NOTIFICATION_TOAST","WRITE_NOTIFICATION_ALERT"]
-};
+// Called after every change. Debounced. Silent on success.
+function persist(){
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(async ()=>{
+    state.meta.saved=new Date().toISOString();
+    const ok=await idbPut(state);
+    const dot=$('saveDot');
+    if(dot){
+      if(ok){ _lastSavedStr=JSON.stringify(state.trades); dot.className="savedot ok"; dot.title="Saved automatically "+new Date().toLocaleTimeString(); }
+      else  { dot.className="savedot warn"; dot.title="Auto-save unavailable — use Export as backup"; }
+    }
+  },250);
+}
 
-function log(m){var el=document.getElementById("log");el.innerHTML+=m+"\n";el.scrollTop=el.scrollHeight;}
-function status(m,cls){var el=document.getElementById("statusBox");el.textContent=m;el.className=cls||"";}
-function enable(on){document.querySelectorAll(".needsConn").forEach(function(b){b.disabled=!on;});}
-function wsSend(o){proxy.contentWindow.postMessage({cmd:"send",data:JSON.stringify(o)},"*");}
+async function loadState(){
+  _db=await openDB();
+  let loaded=null;
 
-window.addEventListener("message",function(e){
-  var m=e.data;
-  if(m.ev==="ready"){proxyReady=true;}
-  else if(m.ev==="open"){
-    log("Socket open — sending register...");
-    var key=localStorage.getItem("tvkey_"+TV_IP);
-    var p={forcePairing:false,pairingType:"PROMPT",manifest:MANIFEST};
-    if(key)p["client-key"]=key;
-    wsSend({type:"register",id:"register_0",payload:p});
-    status("👋 Now accept the pairing prompt on your TV screen...","warn");
+  // 1. Prefer IndexedDB (what auto-save writes to)
+  const fromDb=await idbGet();
+  if(fromDb && Array.isArray(fromDb.trades)) loaded=fromDb;
+
+  // 2. Otherwise migrate from the embedded block (a file you saved the old way,
+  //    or a fresh copy). Whichever has MORE trades wins, so opening an older
+  //    exported file never silently wipes newer in-browser data.
+  try{
+    const raw=document.getElementById('tradeData').textContent.trim();
+    const embedded=JSON.parse(raw);
+    if(embedded && Array.isArray(embedded.trades)){
+      if(!loaded || embedded.trades.length>loaded.trades.length) loaded=embedded;
+    }
+  }catch(e){ /* no embedded data */ }
+
+  if(loaded) state=loaded;
+  if(!state.meta) state.meta={created:null};
+  if(!state.meta.created) state.meta.created=new Date().toISOString();
+  _lastSavedStr=JSON.stringify(state.trades);
+
+  // If we migrated fresh data in from a file, write it into the DB now.
+  if(_db) await idbPut(state);
+}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const esc = s => (s??"").toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => (n<0?"-":"") + "$" + Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+function computeTrade(t){
+  const entry=+t.entry, exit=(t.exit===""||t.exit==null)?null:+t.exit, size=+t.size||0, stop=(t.stop===""||t.stop==null)?null:+t.stop, fees=+t.fees||0;
+  const open = exit===null || isNaN(exit) || !size || isNaN(entry);
+  let gross=null,pnl=null,pct=null,r=null,result="open";
+  if(!open){
+    const dirMul = t.dir==="short" ? -1 : 1;
+    gross = (exit-entry)*size*dirMul;
+    pnl = gross - fees;
+    const cost = Math.abs(entry*size);
+    pct = cost ? (pnl/cost*100) : null;
+    if(stop!=null && !isNaN(stop)){
+      const risk = Math.abs(entry-stop)*size;
+      if(risk>0) r = pnl/risk;
+    }
+    result = pnl>0.000001 ? "win" : (pnl<-0.000001 ? "loss" : "be");
   }
-  else if(m.ev==="message"){
-    var d;try{d=JSON.parse(m.data);}catch(_){return;}
-    log("<- "+JSON.stringify(d));
-    if(d.type==="registered"){
-      if(d.payload&&d.payload["client-key"])
-        localStorage.setItem("tvkey_"+TV_IP,d.payload["client-key"]);
-      paired=true;
-      status("✅ Connected & paired! Ready to install.","ok");
-      enable(true);
-    }else if(d.type==="error"){
-      status("TV error: "+(d.error||JSON.stringify(d)),"err");
+  return {open,gross,pnl,pct,r,result};
+}
+
+function brokeRules(t){
+  const bad = new Set(BEHAVIOUR_TAGS.filter(x=>x.k==="bad").map(x=>x.t));
+  return (t.tags||[]).some(x=>bad.has(x));
+}
+
+/* =========================================================
+   TAB SWITCHING
+   ========================================================= */
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('on'));
+  $('view-'+v).classList.add('on');
+  document.querySelector('.tab[data-view="'+v+'"]').classList.add('on');
+  if(v==='dashboard') renderDashboard();
+  if(v==='history') renderHistory();
+  window.scrollTo({top:0,behavior:'instant' in window ? 'auto':'auto'});
+}
+
+/* =========================================================
+   FORM
+   ========================================================= */
+function buildTagChips(){
+  $('tagChips').innerHTML = BEHAVIOUR_TAGS.map((x,i)=>`
+    <span class="chip ${x.k}">
+      <input type="checkbox" id="tag_${i}" value="${esc(x.t)}">
+      <label for="tag_${i}">${esc(x.t)}</label>
+    </span>`).join('');
+}
+
+function recalc(){
+  const t={dir:document.querySelector('input[name=dir]:checked').value,entry:$('entry').value,exit:$('exit').value,size:$('size').value,stop:$('stop').value,fees:$('fees').value};
+  const c=computeTrade(t);
+  const pnlEl=$('lpPnl'),pctEl=$('lpPct'),rEl=$('lpR'),resEl=$('lpRes');
+  [pnlEl,pctEl,rEl,resEl].forEach(e=>e.className="v num dim");
+  if(c.open){ pnlEl.textContent="—";pctEl.textContent="—";rEl.textContent="—";resEl.textContent="Open"; return; }
+  pnlEl.textContent=money(c.pnl); pnlEl.className="v num "+(c.pnl>=0?"pos":"neg");
+  pctEl.textContent=(c.pct>=0?"+":"")+c.pct.toFixed(2)+"%"; pctEl.className="v num "+(c.pct>=0?"pos":"neg");
+  rEl.textContent = c.r==null ? "—" : (c.r>=0?"+":"")+c.r.toFixed(2)+"R"; rEl.className="v num "+(c.r==null?"dim":(c.r>=0?"pos":"neg"));
+  resEl.textContent = c.result==="win"?"Win":c.result==="loss"?"Loss":"Break-even"; resEl.className="v num "+(c.result==="win"?"pos":c.result==="loss"?"neg":"dim");
+}
+
+function saveTrade(){
+  const symbol=$('symbol').value.trim();
+  if(!symbol){ toast("Add a symbol first","err"); $('symbol').focus(); return; }
+  const tags=[...document.querySelectorAll('#tagChips input:checked')].map(i=>i.value);
+  const t={
+    id: $('editId').value || uid(),
+    date: $('date').value || new Date().toISOString().slice(0,16),
+    symbol: symbol.toUpperCase(),
+    dir: document.querySelector('input[name=dir]:checked').value,
+    setup: $('setup').value.trim(),
+    entry: $('entry').value, exit: $('exit').value, size: $('size').value,
+    stop: $('stop').value, target: $('target').value, fees: $('fees').value,
+    moodBefore: $('moodBefore').value, moodDuring: $('moodDuring').value, moodAfter: $('moodAfter').value,
+    conf: $('conf').value, tags, notes: $('notes').value.trim()
+  };
+  const idx = state.trades.findIndex(x=>x.id===t.id);
+  if(idx>=0){ state.trades[idx]=t; toast("Trade updated & saved"); }
+  else { state.trades.push(t); toast("Trade added & saved"); }
+  persist();
+  resetForm();
+  switchView('history');
+}
+
+function resetForm(){
+  $('tradeForm').reset();
+  $('editId').value="";
+  $('dirLong').checked=true;
+  $('submitBtn').textContent="Add trade";
+  // default datetime = now (local)
+  const n=new Date(); n.setMinutes(n.getMinutes()-n.getTimezoneOffset());
+  $('date').value=n.toISOString().slice(0,16);
+  recalc();
+}
+
+function editTrade(id){
+  const t=state.trades.find(x=>x.id===id); if(!t) return;
+  $('editId').value=t.id;
+  $('date').value=t.date; $('symbol').value=t.symbol; $('setup').value=t.setup||"";
+  (t.dir==="short"?$('dirShort'):$('dirLong')).checked=true;
+  $('entry').value=t.entry; $('exit').value=t.exit; $('size').value=t.size;
+  $('stop').value=t.stop; $('target').value=t.target||""; $('fees').value=t.fees||"";
+  $('moodBefore').value=t.moodBefore||""; $('moodDuring').value=t.moodDuring||""; $('moodAfter').value=t.moodAfter||"";
+  $('conf').value=t.conf||"";
+  document.querySelectorAll('#tagChips input').forEach(i=>i.checked=(t.tags||[]).includes(i.value));
+  $('notes').value=t.notes||"";
+  $('submitBtn').textContent="Update trade";
+  switchView('entry'); recalc();
+  window.scrollTo({top:0});
+}
+
+function deleteTrade(id){
+  const t=state.trades.find(x=>x.id===id);
+  if(!confirm(`Delete ${t?t.symbol:"this"} trade? This can't be undone until you re-save.`)) return;
+  state.trades=state.trades.filter(x=>x.id!==id);
+  persist();
+  renderHistory(); toast("Trade deleted");
+}
+
+/* =========================================================
+   HISTORY RENDER
+   ========================================================= */
+function moodStrip(t){
+  const parts=[];
+  if(t.moodBefore) parts.push(`<span class="pill">before <b>${esc(t.moodBefore)}</b></span>`);
+  if(t.moodDuring) parts.push(`<span class="pill">during <b>${esc(t.moodDuring)}</b></span>`);
+  if(t.moodAfter) parts.push(`<span class="pill">after <b>${esc(t.moodAfter)}</b></span>`);
+  if(t.conf) parts.push(`<span class="pill">conviction <b>${esc(t.conf)}/5</b></span>`);
+  if(!parts.length) return "";
+  return `<div class="mood-strip">${parts.join('<span class="arrow">→</span>')}</div>`;
+}
+
+function tagRow(t){
+  if(!(t.tags||[]).length) return "";
+  const badSet=new Set(BEHAVIOUR_TAGS.filter(x=>x.k==="bad").map(x=>x.t));
+  const goodSet=new Set(BEHAVIOUR_TAGS.filter(x=>x.k==="good").map(x=>x.t));
+  return `<div class="tc-tags">${t.tags.map(x=>`<span class="t ${badSet.has(x)?'bad':goodSet.has(x)?'good':''}">${esc(x)}</span>`).join('')}</div>`;
+}
+
+function cardClass(t,c){
+  if(c.open) return "open";
+  if(brokeRules(t)) return "broke";
+  if(c.result==="win") return "win";
+  if(c.result==="loss") return "disc-loss"; // disciplined loss → amber edge
+  return "";
+}
+
+function renderHistory(){
+  const q=($('search').value||"").toLowerCase();
+  const fr=$('filterResult').value, sort=$('sortBy').value;
+  let list=state.trades.map(t=>({t,c:computeTrade(t)}));
+  if(q) list=list.filter(({t})=>[t.symbol,t.setup,t.notes].join(" ").toLowerCase().includes(q));
+  if(fr!=="all") list=list.filter(({c})=> fr==="open"?c.open:c.result===fr);
+  list.sort((a,b)=>{
+    if(sort==="date-desc") return (b.t.date||"").localeCompare(a.t.date||"");
+    if(sort==="date-asc") return (a.t.date||"").localeCompare(b.t.date||"");
+    const ap=a.c.pnl??0, bp=b.c.pnl??0;
+    if(sort==="pnl-desc") return bp-ap;
+    if(sort==="pnl-asc") return ap-bp;
+    return 0;
+  });
+
+  $('countTag').textContent = list.length + (list.length===1?" trade":" trades");
+  const wrap=$('historyCards');
+
+  if(!state.trades.length){
+    wrap.innerHTML=`<div class="empty">
+      <div class="mono">NO TRADES LOGGED</div>
+      <div class="big">Your journal is empty.</div>
+      <div>Head to <b style="color:var(--amber-soft)">Log Trade</b> to record your first entry — setup, numbers, and the mindset behind it.</div>
+    </div>`;
+    return;
+  }
+  if(!list.length){ wrap.innerHTML=`<div class="empty"><div class="big">No trades match your filters.</div></div>`; return; }
+
+  wrap.innerHTML=list.map(({t,c})=>{
+    const date = t.date ? t.date.replace('T',' ') : "";
+    const pnlHtml = c.open
+      ? `<div class="tc-pnl dim">OPEN<small>unrealised</small></div>`
+      : `<div class="tc-pnl ${c.pnl>=0?'pos':'neg'}">${money(c.pnl)}<small>${c.pct>=0?'+':''}${c.pct.toFixed(2)}%${c.r!=null?' · '+(c.r>=0?'+':'')+c.r.toFixed(2)+'R':''}</small></div>`;
+    const metrics=[];
+    metrics.push(`<div class="m"><div class="k">Entry</div><div class="v">${esc(t.entry||'—')}</div></div>`);
+    metrics.push(`<div class="m"><div class="k">Exit</div><div class="v">${t.exit?esc(t.exit):'—'}</div></div>`);
+    metrics.push(`<div class="m"><div class="k">Size</div><div class="v">${esc(t.size||'—')}</div></div>`);
+    if(t.stop) metrics.push(`<div class="m"><div class="k">Stop</div><div class="v">${esc(t.stop)}</div></div>`);
+    if(t.target) metrics.push(`<div class="m"><div class="k">Target</div><div class="v">${esc(t.target)}</div></div>`);
+    if(t.fees) metrics.push(`<div class="m"><div class="k">Fees</div><div class="v">${esc(t.fees)}</div></div>`);
+    return `<article class="tcard ${cardClass(t,c)}">
+      <div class="tc-controls">
+        <button class="icon-btn" onclick="editTrade('${t.id}')">Edit</button>
+        <button class="icon-btn danger" onclick="deleteTrade('${t.id}')">Delete</button>
+      </div>
+      <div class="tc-head">
+        <span class="tc-sym">${esc(t.symbol)}</span>
+        <span class="tag ${t.dir}">${t.dir}</span>
+        ${c.open?'<span class="tag openx">open</span>':''}
+        ${t.setup?`<span class="tc-date">· ${esc(t.setup)}</span>`:''}
+        <span class="tc-date">${esc(date)}</span>
+        ${pnlHtml}
+      </div>
+      <div class="tc-metrics">${metrics.join('')}</div>
+      ${moodStrip(t)}
+      ${tagRow(t)}
+      ${t.notes?`<div class="tc-note">${esc(t.notes)}</div>`:''}
+    </article>`;
+  }).join('');
+}
+
+/* =========================================================
+   DASHBOARD
+   ========================================================= */
+function renderDashboard(){
+  const closed=state.trades.map(computeTrade).filter(c=>!c.open);
+  const wins=closed.filter(c=>c.result==="win");
+  const losses=closed.filter(c=>c.result==="loss");
+  const be=closed.filter(c=>c.result==="be");
+  const openCount=state.trades.length - closed.length;
+  const net=closed.reduce((s,c)=>s+c.pnl,0);
+  const grossWin=wins.reduce((s,c)=>s+c.pnl,0);
+  const grossLoss=Math.abs(losses.reduce((s,c)=>s+c.pnl,0));
+  const winRate=closed.length?(wins.length/closed.length*100):null;
+  const pf=grossLoss>0?(grossWin/grossLoss):(grossWin>0?Infinity:null);
+  const avgWin=wins.length?grossWin/wins.length:0;
+  const avgLoss=losses.length?grossLoss/losses.length:0;
+  const rTrades=closed.filter(c=>c.r!=null);
+  const avgR=rTrades.length?rTrades.reduce((s,c)=>s+c.r,0)/rTrades.length:null;
+  const discCount=state.trades.filter(t=>!brokeRules(t)).length;
+  const discRate=state.trades.length?(discCount/state.trades.length*100):null;
+
+  const netCls=net>=0?"pos":"neg";
+  const cards=[
+    `<div class="stat hero"><span class="accent-bar"></span><div class="label">Net P&amp;L</div><div class="value ${state.trades.length?netCls:'dim'}">${state.trades.length?money(net):'—'}</div><div class="foot">${closed.length} closed · ${openCount} open</div></div>`,
+    `<div class="stat"><span class="accent-bar" style="background:${winRate>=50?'var(--green)':'var(--red)'}"></span><div class="label">Win rate</div><div class="value ${winRate==null?'dim':''}">${winRate==null?'—':winRate.toFixed(0)+'%'}</div><div class="foot">${wins.length}W · ${losses.length}L · ${be.length}BE</div></div>`,
+    `<div class="stat"><span class="accent-bar"></span><div class="label">Profit factor</div><div class="value ${pf==null?'dim':''}">${pf==null?'—':(pf===Infinity?'∞':pf.toFixed(2))}</div><div class="foot">win $ ÷ loss $</div></div>`,
+    `<div class="stat"><span class="accent-bar"></span><div class="label">Avg R multiple</div><div class="value ${avgR==null?'dim':(avgR>=0?'pos':'neg')}">${avgR==null?'—':(avgR>=0?'+':'')+avgR.toFixed(2)+'R'}</div><div class="foot">${rTrades.length} trades with a stop</div></div>`,
+    `<div class="stat"><span class="accent-bar" style="background:var(--amber)"></span><div class="label">Discipline</div><div class="value ${discRate==null?'dim':''}" style="color:${discRate==null?'':'var(--amber-soft)'}">${discRate==null?'—':discRate.toFixed(0)+'%'}</div><div class="foot">trades with no rule breaks</div></div>`,
+    `<div class="stat"><span class="accent-bar" style="background:var(--green)"></span><div class="label">Avg win</div><div class="value ${wins.length?'pos':'dim'}">${wins.length?money(avgWin):'—'}</div><div class="foot">per winning trade</div></div>`,
+    `<div class="stat"><span class="accent-bar" style="background:var(--red)"></span><div class="label">Avg loss</div><div class="value ${losses.length?'neg':'dim'}">${losses.length?money(-avgLoss):'—'}</div><div class="foot">per losing trade</div></div>`,
+  ];
+  $('statGrid').innerHTML=cards.join('');
+
+  // result breakdown bars
+  const total=closed.length||1;
+  const rows=[
+    {name:"Wins",n:wins.length,color:"var(--green)"},
+    {name:"Losses",n:losses.length,color:"var(--red)"},
+    {name:"Break-even",n:be.length,color:"var(--muted)"},
+    {name:"Open",n:openCount,color:"var(--muted-2)"},
+  ];
+  const maxRow=Math.max(1,...rows.map(r=>r.n));
+  $('breakdownBars').innerHTML = state.trades.length ? rows.map(r=>`
+    <div class="barrow">
+      <span>${r.name}</span>
+      <span class="track"><span class="fill" style="width:${r.n/maxRow*100}%;background:${r.color}"></span></span>
+      <span class="cnt">${r.n}</span>
+    </div>`).join('') : `<div class="dim" style="font-size:13px">Log trades to see your win/loss shape.</div>`;
+
+  // emotion / behaviour frequency
+  const freq={};
+  state.trades.forEach(t=>(t.tags||[]).forEach(tag=>freq[tag]=(freq[tag]||0)+1));
+  const sorted=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxTag=Math.max(1,...sorted.map(x=>x[1]));
+  const badSet=new Set(BEHAVIOUR_TAGS.filter(x=>x.k==="bad").map(x=>x.t));
+  $('emotionBars').innerHTML = sorted.length ? sorted.map(([tag,n])=>`
+    <div class="barrow">
+      <span>${esc(tag)}</span>
+      <span class="track"><span class="fill" style="width:${n/maxTag*100}%;background:${badSet.has(tag)?'var(--red)':'var(--green)'}"></span></span>
+      <span class="cnt">${n}</span>
+    </div>`).join('') : `<div class="dim" style="font-size:13px">Tag your behaviour on each trade to spot patterns — FOMO, revenge trading, or discipline.</div>`;
+
+  renderCharts();
+}
+
+/* =========================================================
+   CHARTS  (pure inline SVG — no libraries, works offline)
+   ========================================================= */
+function onBalanceChange(){
+  const v=parseFloat($('startBalance').value);
+  state.meta.startBalance = isNaN(v)?null:v;
+  persist();
+  renderCharts();
+}
+
+// chronological equity series from closed trades
+function equitySeries(){
+  const closed=state.trades
+    .filter(t=>!computeTrade(t).open)
+    .slice()
+    .sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  const base = (state.meta.startBalance!=null && !isNaN(state.meta.startBalance)) ? +state.meta.startBalance : null;
+  let cum=0; const pts=[{i:0,equity:base??0,cum:0,date:""}];
+  closed.forEach((t,idx)=>{ cum+=computeTrade(t).pnl; pts.push({i:idx+1,equity:(base??0)+cum,cum,date:t.date}); });
+  // max drawdown on the curve
+  let peak=-Infinity,maxDD=0,peakEq=base??0;
+  pts.forEach(p=>{ if(p.equity>peak){peak=p.equity;} const dd=peak-p.equity; if(dd>maxDD){maxDD=dd;peakEq=peak;} });
+  const ddPct = peakEq>0 ? (maxDD/peakEq*100) : null;
+  return {pts,base,cum,count:closed.length,maxDD,ddPct};
+}
+
+// Catmull-Rom smoothing → cubic bezier path
+function smoothPath(P){
+  if(P.length<2) return "";
+  let d=`M ${P[0].x.toFixed(1)} ${P[0].y.toFixed(1)}`;
+  for(let i=0;i<P.length-1;i++){
+    const p0=P[i-1]||P[i], p1=P[i], p2=P[i+1], p3=P[i+2]||P[i+1];
+    const c1x=p1.x+(p2.x-p0.x)/6, c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6, c2y=p2.y-(p3.y-p1.y)/6;
+    d+=` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+function renderEquity(){
+  const {pts,base,cum,count,ddPct}=equitySeries();
+  const readout=$('growthReadout');
+  if(count<1){
+    $('equityChart').innerHTML=`<div class="chart-empty">Close at least one trade to plot your equity curve.</div>`;
+    readout.innerHTML=`<span class="dim">—</span>`;
+    return;
+  }
+  // readout
+  if(base!=null && base>0){
+    const g=cum/base*100;
+    readout.innerHTML=`<span class="${g>=0?'pos':'neg'}">${g>=0?'+':''}${g.toFixed(1)}%</span><span class="sub">growth · ${money(base+cum)} equity</span>`;
+  } else {
+    readout.innerHTML=`<span class="${cum>=0?'pos':'neg'}">${money(cum)}</span><span class="sub">cumulative P&amp;L · set a starting balance for %</span>`;
+  }
+
+  const W=720,H=240,padL=8,padR=8,padT=16,padB=16;
+  const baseline = base!=null ? base : 0;
+  let lo=Math.min(baseline,...pts.map(p=>p.equity));
+  let hi=Math.max(baseline,...pts.map(p=>p.equity));
+  if(lo===hi){lo-=1;hi+=1;}
+  const pad=(hi-lo)*0.12; lo-=pad; hi+=pad;
+  const x=i=>padL+(i/(pts.length-1||1))*(W-padL-padR);
+  const y=v=>padT+(1-(v-lo)/(hi-lo))*(H-padT-padB);
+  const P=pts.map((p,idx)=>({x:x(idx),y:y(p.equity)}));
+  const line=smoothPath(P);
+  const baseY=y(baseline);
+  const areaUp=`${line} L ${P[P.length-1].x.toFixed(1)} ${baseY.toFixed(1)} L ${P[0].x.toFixed(1)} ${baseY.toFixed(1)} Z`;
+
+  const svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Equity curve">
+    <defs>
+      <linearGradient id="upGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--green)" stop-opacity="0.30"/>
+        <stop offset="100%" stop-color="var(--green)" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="dnGrad" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" stop-color="var(--red)" stop-opacity="0.30"/>
+        <stop offset="100%" stop-color="var(--red)" stop-opacity="0"/>
+      </linearGradient>
+      <clipPath id="clipUp"><rect x="0" y="0" width="${W}" height="${baseY.toFixed(1)}"/></clipPath>
+      <clipPath id="clipDn"><rect x="0" y="${baseY.toFixed(1)}" width="${W}" height="${(H-baseY).toFixed(1)}"/></clipPath>
+    </defs>
+    <path d="${areaUp}" fill="url(#upGrad)" clip-path="url(#clipUp)"/>
+    <path d="${areaUp}" fill="url(#dnGrad)" clip-path="url(#clipDn)"/>
+    <line x1="${padL}" y1="${baseY.toFixed(1)}" x2="${W-padR}" y2="${baseY.toFixed(1)}" stroke="var(--hair)" stroke-width="1" stroke-dasharray="4 4"/>
+    <path d="${line}" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${P[P.length-1].x.toFixed(1)}" cy="${P[P.length-1].y.toFixed(1)}" r="4" fill="var(--amber)"/>
+  </svg>`;
+  $('equityChart').innerHTML=svg;
+}
+
+function radarMetrics(){
+  const closed=state.trades.map(computeTrade).filter(c=>!c.open);
+  const wins=closed.filter(c=>c.result==="win").length;
+  const losses=closed.filter(c=>c.result==="loss").length;
+  const winRate=closed.length?wins/closed.length*100:0;
+  const lossRate=closed.length?losses/closed.length*100:0;
+  const gW=closed.filter(c=>c.result==="win").reduce((s,c)=>s+c.pnl,0);
+  const gL=Math.abs(closed.filter(c=>c.result==="loss").reduce((s,c)=>s+c.pnl,0));
+  const pf=gL>0?gW/gL:(gW>0?3:0);
+  const discCount=state.trades.filter(t=>!brokeRules(t)).length;
+  const discRate=state.trades.length?discCount/state.trades.length*100:0;
+  const activity=Math.min(state.trades.length/30,1)*100;
+  const {ddPct}=equitySeries();
+  return [
+    {label:"Discipline", value:discRate, display:discRate.toFixed(0)+"%"},
+    {label:"Profit trades", value:winRate, display:winRate.toFixed(1)+"%"},
+    {label:"Loss trades", value:lossRate, display:lossRate.toFixed(1)+"%"},
+    {label:"Max drawdown", value:Math.min(ddPct??0,100), display:(ddPct==null?"—":ddPct.toFixed(1)+"%")},
+    {label:"Consistency", value:Math.min(pf/3,1)*100, display:pf?(pf>=3?"3.0+":pf.toFixed(2)):"—"},
+    {label:"Activity", value:activity, display:state.trades.length+" trades"},
+  ];
+}
+
+function renderRadar(){
+  if(!state.trades.length){
+    $('radarChart').innerHTML=`<div class="chart-empty">Log trades to build your radar.</div>`;
+    $('radarLegend').innerHTML="";
+    return;
+  }
+  const axes=radarMetrics();
+  const n=axes.length, S=260, c=S/2, R=88;
+  const ang=i=>(-90+i*360/n)*Math.PI/180;
+  const pt=(i,rad)=>[c+Math.cos(ang(i))*rad, c+Math.sin(ang(i))*rad];
+
+  let rings="";
+  [0.25,0.5,0.75,1].forEach(f=>{
+    const poly=axes.map((_,i)=>pt(i,R*f).map(v=>v.toFixed(1)).join(",")).join(" ");
+    rings+=`<polygon points="${poly}" fill="none" stroke="var(--hair)" stroke-width="1"/>`;
+  });
+  let spokes="",labels="";
+  axes.forEach((a,i)=>{
+    const [ex,ey]=pt(i,R);
+    spokes+=`<line x1="${c}" y1="${c}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="var(--hair)" stroke-width="1"/>`;
+    const [lx,ly]=pt(i,R+18);
+    const anchor = Math.abs(lx-c)<6 ? "middle" : (lx>c ? "start":"end");
+    const hot = a.value>=70 ? "hot":"";
+    labels+=`<text x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" text-anchor="${anchor}" class="rax-label ${hot}">${esc(a.label)}</text>`;
+  });
+  const dataPoly=axes.map((a,i)=>pt(i,R*Math.max(a.value,0)/100).map(v=>v.toFixed(1)).join(",")).join(" ");
+  const dots=axes.map((a,i)=>{const[px,py]=pt(i,R*Math.max(a.value,0)/100);return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="var(--amber)"/>`;}).join("");
+
+  $('radarChart').innerHTML=`<svg viewBox="0 0 ${S} ${S}" role="img" aria-label="Performance radar">
+    ${rings}${spokes}
+    <polygon points="${dataPoly}" fill="var(--amber-dim)" stroke="var(--amber)" stroke-width="2" stroke-linejoin="round"/>
+    ${dots}${labels}
+  </svg>`;
+
+  $('radarLegend').innerHTML=axes.map(a=>`
+    <div class="rl"><span class="rk">${esc(a.label)}</span><span class="rv">${esc(a.display)}</span></div>`).join('');
+}
+
+function renderCharts(){ renderEquity(); renderRadar(); }
+
+/* =========================================================
+   SAVE TO FILE  (self-writing HTML)
+   ========================================================= */
+let fileHandle = null; // File System Access handle — lets Save overwrite the same file in place
+
+function buildSnapshotHtml(){
+  // 1. write current data into the embedded json block
+  state.meta.saved = new Date().toISOString();
+  // escape "<" so a note containing a closing script tag can never break the file on reload
+  $('tradeData').textContent = "\n"+JSON.stringify(state).replace(/</g,"\\u003c")+"\n";
+
+  // 2. strip volatile DOM so the file stays lean regardless of trade count
+  const snapshots=[];
+  ['statGrid','breakdownBars','emotionBars','historyCards','tagChips','equityChart','radarChart','radarLegend','growthReadout'].forEach(id=>{
+    const el=$(id); snapshots.push([el,el.innerHTML]); el.innerHTML="";
+  });
+
+  // 3. serialize
+  const html = "<!DOCTYPE html>\n<html lang=\"en\">\n" + document.documentElement.innerHTML + "\n</html>";
+
+  // 4. restore live DOM
+  snapshots.forEach(([el,html])=>el.innerHTML=html);
+  return html;
+}
+
+async function saveToFile(){
+  const html = buildSnapshotHtml();
+
+  // Preferred path: overwrite the journal file in place (Chrome / Edge).
+  // First save asks you to pick the file (pick THIS journal file to update it);
+  // every save after that writes silently to the same file.
+  if (window.showSaveFilePicker){
+    try{
+      if (!fileHandle){
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: "trade-journal.html",
+          types: [{description:"HTML journal", accept:{"text/html":[".html"]}}]
+        });
+      }
+      const writable = await fileHandle.createWritable();
+      await writable.write(html);
+      await writable.close();
+      toast(`Saved ${state.trades.length} trade${state.trades.length===1?'':'s'} → ${fileHandle.name}`);
+      return;
+    }catch(err){
+      if (err && err.name === "AbortError"){ toast("Save cancelled","err"); return; }
+      // permission denied or API hiccup — fall through to download
+      console.warn("In-place save failed, falling back to download", err);
+      fileHandle = null;
     }
   }
-  else if(m.ev==="error"){
-    status("❌ Connection failed — did you do Step 1 (accept cert)?","err");
-    log("Error connecting. Make sure you tapped the orange cert button first.");
+
+  // iOS / iPadOS path: no browser on iOS can overwrite files, so hand the
+  // file to the share sheet — choose "Save to Files" to store the updated copy.
+  if (navigator.canShare){
+    const file = new File([html], "trade-journal.html", {type:"text/html"});
+    if (navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file], title:"Trade Journal"});
+        toast(`${state.trades.length} trade${state.trades.length===1?'':'s'} ready — tap "Save to Files"`);
+        return;
+      }catch(err){
+        if (err && err.name === "AbortError"){ toast("Save cancelled","err"); return; }
+        console.warn("Share sheet failed, falling back to download", err);
+      }
+    }
   }
-  else if(m.ev==="close"){
-    status("Disconnected — tap Connect to retry","err");
-    paired=false;enable(false);
-  }
+
+  // Fallback (Firefox / Safari): download a fresh dated copy.
+  // IMPORTANT: next session you must open the NEWEST downloaded copy — the old file is not updated.
+  const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const stamp=new Date().toISOString().slice(0,10);
+  a.href=url; a.download=`trade-journal-${stamp}.html`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  toast(`Downloaded copy with ${state.trades.length} trade${state.trades.length===1?'':'s'} — open that file next time`);
+}
+
+/* =========================================================
+   IMPORT (merge another saved journal)
+   ========================================================= */
+function importFile(){ $('fileInput').click(); }
+function handleImport(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      let data;
+      const txt=ev.target.result;
+      if(file.name.endsWith('.json')){ data=JSON.parse(txt); }
+      else {
+        const m=txt.match(/<script id="tradeData"[^>]*>([\s\S]*?)<\/script>/);
+        data=JSON.parse(m[1].trim());
+      }
+      const incoming=Array.isArray(data)?data:(data.trades||[]);
+      const have=new Set(state.trades.map(t=>t.id));
+      let added=0;
+      incoming.forEach(t=>{ if(!t.id) t.id=uid(); if(!have.has(t.id)){ state.trades.push(t); added++; } });
+      persist();
+      renderDashboard(); renderHistory();
+      switchView('history');
+      toast(`Imported ${added} new trade${added===1?'':'s'}`);
+    }catch(err){ toast("Couldn't read that file","err"); console.error(err); }
+  };
+  reader.readAsText(file);
+  e.target.value="";
+}
+
+/* =========================================================
+   EXPORT CSV
+   ========================================================= */
+function exportCSV(){
+  if(!state.trades.length){ toast("No trades to export","err"); return; }
+  const cols=["date","symbol","dir","setup","entry","exit","size","stop","target","fees","pnl","return_pct","r_multiple","result","moodBefore","moodDuring","moodAfter","conviction","tags","notes"];
+  const rows=state.trades.map(t=>{
+    const c=computeTrade(t);
+    const row={...t,pnl:c.pnl?.toFixed(2)??"",return_pct:c.pct?.toFixed(2)??"",r_multiple:c.r?.toFixed(2)??"",result:c.result,conviction:t.conf,tags:(t.tags||[]).join("; ")};
+    return cols.map(k=>{
+      let v=row[k]??"";
+      v=(""+v).replace(/"/g,'""');
+      return /[",\n]/.test(v)?`"${v}"`:v;
+    }).join(",");
+  });
+  const csv=[cols.join(","),...rows].join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`trade-journal-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  toast("Exported CSV");
+}
+
+/* =========================================================
+   TOAST + SHORTCUTS + INIT
+   ========================================================= */
+let toastTimer;
+function toast(msg,type){
+  const el=$('toast'); el.textContent=msg; el.className="toast show"+(type==="err"?" err":"");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.className="toast",2600);
+}
+
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); saveToFile(); }
 });
 
-function connect(){
-  if(!proxyReady){setTimeout(connect,300);return;}
-  paired=false;enable(false);
-  log("Connecting wss://"+TV_IP+":3001 ...");
-  status("Connecting...","");
-  proxy.contentWindow.postMessage({cmd:"open",url:"wss://"+TV_IP+":3001"},"*");
+async function init(){
+  buildTagChips();
+  resetForm();
+  await loadState();
+  if(state.meta.startBalance!=null && !isNaN(state.meta.startBalance)) $('startBalance').value=state.meta.startBalance;
+  renderDashboard();
+  renderHistory();
+  const dot=$('saveDot'); if(dot){ dot.className="savedot ok"; dot.title="Auto-save on"; }
 }
-
-function send(uri,payload){
-  if(!paired)return;
-  var msg={type:"request",id:"req_"+(msgId++),uri:uri,payload:payload||{}};
-  log("-> "+JSON.stringify(msg));
-  wsSend(msg);
-}
-
-function sendToast(){
-  send("ssap://system.notifications/createToast",
-    {message:document.getElementById("msg").value||"Hello!"});
-}
-
-function installViaAdoverlay(){
-  var ishIp = document.getElementById("ishIp").value.trim() || "10.0.0.146";
-  var installUrl = "http://"+ishIp+":8080/install.html";
-  log("Launching adoverlay -> "+installUrl);
-  status("🚀 Launching adoverlay WAM app — watch TV screen...","warn");
-  // Same exact method slopbro uses to run code on the TV
-  send("ssap://com.webos.applicationManager/launch",{
-    id:"com.webos.app.adoverlay",
-    params:{target: installUrl}
-  });
-  setTimeout(function(){
-    log("If TV screen showed nothing, adoverlay may be gone. Try com.webos.app.igallery or com.webos.app.browser as app id.");
-  }, 3000);
-}
+init();
 </script>
 </body>
 </html>
